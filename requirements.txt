@@ -10,6 +10,7 @@ h11
 idna
 passlib
 psycopg2
+argon2-cffi
 pycparser
 pydantic
 pydantic_core

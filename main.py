@@ -1,8 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from core.config import settings
-from core.database import engine
-from models import Base
+from core.database import engine, Base
 from api.router import api_router
 
 # Create database tables
