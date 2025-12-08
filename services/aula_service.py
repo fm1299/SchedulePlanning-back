@@ -1,236 +1,153 @@
-from typing import List, Optional
 from sqlalchemy.orm import Session
-
-from repositories.aula_repository import AulaRepository
-from schemas.aula import AulaCreate, AulaUpdate, AulaResponse, AulaSearch
-from models.aula import TipoAula
-from core.exceptions import (
-    AulaNotFoundException,
-    AulaCodigoExistsException,
-    ValidationException
+from sqlalchemy import or_, and_, func
+from typing import List, Optional
+from fastapi import HTTPException
+from models.aula import Aula
+from models.tipo_aula import TipoAula
+from schemas.aula import (
+    AulaCreate, AulaUpdate, AulaSearch, AulaStatistics
 )
 
-
 class AulaService:
-    """
-    Service layer for Aula (Classroom) business logic.
-    Handles validation, orchestration, and business rules.
-    """
-    
     def __init__(self, db: Session):
-        self.repository = AulaRepository(db)
         self.db = db
     
-    def get_aula(self, aula_id: int) -> AulaResponse:
-        """
-        Get a single classroom by ID.
-        
-        Args:
-            aula_id: The classroom ID
-            
-        Returns:
-            AulaResponse with classroom data
-            
-        Raises:
-            AulaNotFoundException: If classroom doesn't exist
-        """
-        aula = self.repository.get(aula_id)
+    def get_all_aulas(self, skip: int = 0, limit: int = 100) -> List[Aula]:
+        return self.db.query(Aula).offset(skip).limit(limit).all()
+    
+    def get_aula(self, aula_id: int) -> Aula:
+        aula = self.db.query(Aula).filter(Aula.id_aula == aula_id).first()
         if not aula:
-            raise AulaNotFoundException(aula_id)
-        return AulaResponse.model_validate(aula)
+            raise HTTPException(status_code=404, detail="Aula no encontrada")
+        return aula
     
-    def get_all_aulas(self, skip: int = 0, limit: int = 100) -> List[AulaResponse]:
-        """
-        Get all classrooms with pagination.
-        
-        Args:
-            skip: Number of records to skip
-            limit: Maximum number of records to return
-            
-        Returns:
-            List of AulaResponse objects
-        """
-        aulas = self.repository.get_all(skip, limit)
-        return [AulaResponse.model_validate(aula) for aula in aulas]
-    
-    def create_aula(self, aula_in: AulaCreate) -> AulaResponse:
-        """
-        Create a new classroom with business validation.
-        
-        Args:
-            aula_in: Classroom creation data
-            
-        Returns:
-            AulaResponse with created classroom data
-            
-        Raises:
-            AulaCodigoExistsException: If classroom code already exists
-            ValidationException: If data validation fails
-        """
-        # Business Rule 1: Validate classroom code uniqueness
-        existing = self.repository.get_by_codigo(aula_in.codigo)
+    def create_aula(self, aula_in: AulaCreate) -> Aula:
+        existing = self.db.query(Aula).filter(Aula.codigo == aula_in.codigo).first()
         if existing:
-            raise AulaCodigoExistsException(aula_in.codigo)
+            raise HTTPException(status_code=400, detail="El código del aula ya existe")
         
-        # Business Rule 2: Validate capacity is positive
-        if aula_in.capacidad <= 0:
-            raise ValidationException("La capacidad debe ser mayor a 0")
+        tipo = self.db.query(TipoAula).filter(TipoAula.id_tipo == aula_in.id_tipo).first()
+        if not tipo:
+            raise HTTPException(status_code=400, detail="Tipo de aula no encontrado")
         
-        # Business Rule 3: Validate capacity is reasonable (not too large)
-        if aula_in.capacidad > 500:
-            raise ValidationException("La capacidad máxima permitida es 500 estudiantes")
+        aula = Aula(**aula_in.dict())
+        self.db.add(aula)
+        self.db.commit()
+        self.db.refresh(aula)
+        return aula
+    
+    def update_aula(self, aula_id: int, aula_in: AulaUpdate) -> Aula:
+        aula = self.get_aula(aula_id)
         
-        # Business Rule 4: Validate classroom code format (optional)
-        if not self._validate_codigo_format(aula_in.codigo):
-            raise ValidationException(
-                "El código del aula debe seguir el formato: [LETRA]-[NUMERO] (ej: A-101)"
+        if aula_in.codigo and aula_in.codigo != aula.codigo:
+            existing = self.db.query(Aula).filter(
+                Aula.codigo == aula_in.codigo,
+                Aula.id_aula != aula_id
+            ).first()
+            if existing:
+                raise HTTPException(status_code=400, detail="El código del aula ya existe")
+        
+        update_data = aula_in.dict(exclude_unset=True)
+        for field, value in update_data.items():
+            setattr(aula, field, value)
+        
+        self.db.commit()
+        self.db.refresh(aula)
+        return aula
+    
+    def delete_aula(self, aula_id: int) -> None:
+        aula = self.get_aula(aula_id)
+        
+        if aula.mantenimientos:
+            raise HTTPException(
+                status_code=400, 
+                detail="No se puede eliminar el aula porque tiene mantenimientos asociados"
             )
         
-        # Create the classroom
-        aula = self.repository.create(aula_in.model_dump())
-        return AulaResponse.model_validate(aula)
+        self.db.delete(aula)
+        self.db.commit()
     
-    def update_aula(self, aula_id: int, aula_in: AulaUpdate) -> AulaResponse:
-        """
-        Update an existing classroom with business validation.
+    def search_aulas(self, search_params: AulaSearch) -> List[Aula]:
+        query = self.db.query(Aula)
         
-        Args:
-            aula_id: The classroom ID to update
-            aula_in: Updated classroom data
-            
-        Returns:
-            AulaResponse with updated classroom data
-            
-        Raises:
-            AulaNotFoundException: If classroom doesn't exist
-            AulaCodigoExistsException: If new code conflicts with existing
-            ValidationException: If data validation fails
-        """
-        # Check if classroom exists
-        existing_aula = self.repository.get(aula_id)
-        if not existing_aula:
-            raise AulaNotFoundException(aula_id)
+        if search_params.codigo:
+            query = query.filter(Aula.codigo.ilike(f"%{search_params.codigo}%"))
         
-        # Business Rule: If codigo is being updated, check uniqueness
-        if aula_in.codigo and aula_in.codigo != existing_aula.codigo:
-            existing_by_codigo = self.repository.get_by_codigo(aula_in.codigo)
-            if existing_by_codigo:
-                raise AulaCodigoExistsException(aula_in.codigo)
+        if search_params.id_tipo:
+            query = query.filter(Aula.id_tipo == search_params.id_tipo)
         
-        # Business Rule: Validate capacity if being updated
-        if aula_in.capacidad is not None:
-            if aula_in.capacidad <= 0:
-                raise ValidationException("La capacidad debe ser mayor a 0")
-            if aula_in.capacidad > 500:
-                raise ValidationException("La capacidad máxima permitida es 500 estudiantes")
+        if search_params.id_edificio:
+            query = query.filter(Aula.id_edificio == search_params.id_edificio)
         
-        # Update only provided fields
-        aula = self.repository.update(aula_id, aula_in.model_dump(exclude_unset=True))
-        return AulaResponse.model_validate(aula)
+        if search_params.capacidad_min:
+            query = query.filter(Aula.capacidad >= search_params.capacidad_min)
+        
+        if search_params.capacidad_max:
+            query = query.filter(Aula.capacidad <= search_params.capacidad_max)
+        
+        if search_params.piso is not None:
+            query = query.filter(Aula.piso == search_params.piso)
+        
+        if search_params.estado:
+            query = query.filter(Aula.estado == search_params.estado)
+        
+        return query.all()
     
-    def delete_aula(self, aula_id: int) -> bool:
-        """
-        Delete a classroom with business validation.
+    def get_aulas_by_tipo(self, tipo_id: int) -> List[Aula]:
+        tipo = self.db.query(TipoAula).filter(TipoAula.id_tipo == tipo_id).first()
+        if not tipo:
+            raise HTTPException(status_code=404, detail="Tipo de aula no encontrado")
         
-        Args:
-            aula_id: The classroom ID to delete
-            
-        Returns:
-            True if deleted successfully
-            
-        Raises:
-            AulaNotFoundException: If classroom doesn't exist
-            ValidationException: If classroom has active assignments
-        """
-        # Check if classroom exists
-        aula = self.repository.get(aula_id)
-        if not aula:
-            raise AulaNotFoundException(aula_id)
-        
-        # Business Rule: Check if classroom has active assignments
-        # TODO: Implement check for active assignments when AsignacionRepository is ready
-        # if self._has_active_assignments(aula_id):
-        #     raise ValidationException(
-        #         "No se puede eliminar el aula porque tiene asignaciones activas"
-        #     )
-        
-        return self.repository.delete(aula_id)
+        return self.db.query(Aula).filter(Aula.id_tipo == tipo_id).all()
     
-    def search_aulas(self, search_params: AulaSearch) -> List[AulaResponse]:
-        """
-        Search classrooms with multiple filters.
-        
-        Args:
-            search_params: Search filters
-            
-        Returns:
-            List of AulaResponse objects matching the filters
-        """
-        aulas = self.repository.search(
-            codigo=search_params.codigo,
-            tipo=search_params.tipo,
-            capacidad_min=search_params.capacidad_min,
-            capacidad_max=search_params.capacidad_max,
-            ubicacion=search_params.ubicacion,
-            equipamiento=search_params.equipamiento
+    def get_available_for_capacity(self, capacidad: int, tipo_id: Optional[int] = None) -> List[Aula]:
+        query = self.db.query(Aula).filter(
+            Aula.capacidad >= capacidad,
+            Aula.estado == 'disponible'
         )
-        return [AulaResponse.model_validate(aula) for aula in aulas]
+        
+        if tipo_id:
+            query = query.filter(Aula.id_tipo == tipo_id)
+        
+        return query.order_by(Aula.capacidad).all()
     
-    def get_aulas_by_tipo(self, tipo: TipoAula) -> List[AulaResponse]:
-        """
-        Get all classrooms of a specific type.
-        
-        Args:
-            tipo: Type of classroom
-            
-        Returns:
-            List of AulaResponse objects
-        """
-        aulas = self.repository.get_by_tipo(tipo)
-        return [AulaResponse.model_validate(aula) for aula in aulas]
+    def get_aulas_disponibles(self, skip: int = 0, limit: int = 100) -> List[Aula]:
+        return self.db.query(Aula).filter(
+            Aula.estado == 'disponible'
+        ).offset(skip).limit(limit).all()
     
-    def get_available_for_capacity(
-        self, 
-        capacidad_requerida: int, 
-        tipo: Optional[TipoAula] = None
-    ) -> List[AulaResponse]:
-        """
-        Get classrooms that can accommodate the required capacity.
-        Business logic for finding suitable classrooms.
+    def get_statistics(self) -> AulaStatistics:
+        total = self.db.query(func.count(Aula.id_aula)).scalar()
         
-        Args:
-            capacidad_requerida: Number of students
-            tipo: Optional classroom type filter
-            
-        Returns:
-            List of suitable AulaResponse objects, ordered by capacity
-        """
-        # Business Rule: Add 10% buffer to required capacity for comfort
-        capacidad_con_buffer = int(capacidad_requerida * 1.1)
+        capacidad_stats = self.db.query(
+            func.avg(Aula.capacidad).label('promedio'),
+            func.min(Aula.capacidad).label('minima'),
+            func.max(Aula.capacidad).label('maxima')
+        ).first()
         
-        aulas = self.repository.get_available_for_capacity(capacidad_con_buffer, tipo)
-        return [AulaResponse.model_validate(aula) for aula in aulas]
-    
-    def get_statistics(self) -> dict:
-        """
-        Get classroom statistics and analytics.
+        estados = self.db.query(
+            Aula.estado,
+            func.count(Aula.id_aula).label('cantidad')
+        ).group_by(Aula.estado).all()
         
-        Returns:
-            Dictionary with statistics
-        """
-        return self.repository.get_statistics()
-    
-    def _validate_codigo_format(self, codigo: str) -> bool:
-        """
-        Private method to validate classroom code format.
+        estados_dict = {estado: cantidad for estado, cantidad in estados}
         
-        Args:
-            codigo: Classroom code to validate
-            
-        Returns:
-            True if valid format, False otherwise
-        """
-        import re
-        # Format: [LETTER]-[NUMBER] (e.g., A-101, B-205)
-        pattern = r'^[A-Z]-\d{1,3}$'
-        return bool(re.match(pattern, codigo.upper()))
+        distribucion = self.db.query(
+            TipoAula.nombre,
+            func.count(Aula.id_aula).label('cantidad')
+        ).join(Aula, Aula.id_tipo == TipoAula.id_tipo)\
+         .group_by(TipoAula.nombre).all()
+        
+        return AulaStatistics(
+            total_aulas=total,
+            capacidad_promedio=float(capacidad_stats.promedio or 0),
+            capacidad_minima=capacidad_stats.minima or 0,
+            capacidad_maxima=capacidad_stats.maxima or 0,
+            aulas_disponibles=estados_dict.get('disponible', 0),
+            aulas_mantenimiento=estados_dict.get('mantenimiento', 0),
+            aulas_inhabilitadas=estados_dict.get('inhabilitada', 0),
+            distribucion_por_tipo=[
+                {"tipo": nombre, "cantidad": cantidad}
+                for nombre, cantidad in distribucion
+            ]
+        )

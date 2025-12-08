@@ -1,12 +1,10 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from core.config import settings
-from core.database import engine
-from models import Base
 from api.router import api_router
 
-# Create database tables
-Base.metadata.create_all(bind=engine)
+# Importar modelos para registrar las tablas en SQLAlchemy
+from models.aula import Aula
 
 app = FastAPI(
     title=settings.PROJECT_NAME,

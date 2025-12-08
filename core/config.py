@@ -11,17 +11,13 @@ class Settings(BaseSettings):
     
     # Security
     SECRET_KEY: str
-    ALGORITHM: str = "HS256"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     
-    # CORS
-    BACKEND_CORS_ORIGINS: List[str] = ["http://localhost:3000"]
-    
-    # Redis (optional for caching)
-    REDIS_URL: str = "redis://localhost:6379"
+    # CORS - Solo string, manejaremos la conversión
+    CORS_ORIGINS: str = "http://localhost:3000"
     
     class Config:
         env_file = ".env"
         case_sensitive = True
+        extra = "ignore"
 
 settings = Settings()
