@@ -1,31 +1,72 @@
-from pydantic import BaseModel, Field
-from typing import Optional
-from enum import Enum
+from pydantic import BaseModel, ConfigDict, Field, validator
+from typing import Optional, List, Dict, Any
 
-class TipoAulaEnum(str, Enum):
-    TEORIA = "TEORIA"
-    LABORATORIO = "LABORATORIO"
-    SEMINARIO = "SEMINARIO"
+# Elimina esta línea si existe:
+# from repositories.aula_repository import aula_repository
 
 class AulaBase(BaseModel):
-    codigo: str = Field(..., example="A-101")
-    capacidad: int = Field(..., gt=0, example=40)
-    tipo: TipoAulaEnum
-    ubicacion: str = Field(..., example="Edificio A, Piso 1")
-    equipamiento: Optional[str] = Field(None, example="Proyector, Pizarra")
+    id_edificio: int
+    id_tipo: int
+    codigo: str
+    capacidad: int
+    piso: int
+    equipamiento: Optional[str] = None
+    estado: str = Field(default='disponible')
+    
+    @validator('estado')
+    def validate_estado(cls, v):
+        allowed = ['disponible', 'mantenimiento', 'inhabilitada']
+        if v not in allowed:
+            raise ValueError(f'Estado debe ser uno de: {allowed}')
+        return v
 
 class AulaCreate(AulaBase):
     pass
 
 class AulaUpdate(BaseModel):
+    id_edificio: Optional[int] = None
+    id_tipo: Optional[int] = None
     codigo: Optional[str] = None
-    capacidad: Optional[int] = Field(None, gt=0)
-    tipo: Optional[TipoAulaEnum] = None
-    ubicacion: Optional[str] = None
+    capacidad: Optional[int] = None
+    piso: Optional[int] = None
     equipamiento: Optional[str] = None
-
-class AulaResponse(AulaBase):
-    id: int
+    estado: Optional[str] = None
     
-    class Config:
-        from_attributes = True
+    @validator('estado')
+    def validate_estado(cls, v):
+        if v is not None:
+            allowed = ['disponible', 'mantenimiento', 'inhabilitada']
+            if v not in allowed:
+                raise ValueError(f'Estado debe ser uno de: {allowed}')
+        return v
+
+class AulaInDB(AulaBase):
+    id_aula: int
+    
+    # Información relacionada
+    edificio_nombre: Optional[str] = None
+    tipo_aula_nombre: Optional[str] = None
+    
+    model_config = ConfigDict(from_attributes=True)
+
+class AulaResponse(AulaInDB):
+    pass
+
+class AulaSearch(BaseModel):
+    codigo: Optional[str] = None
+    id_tipo: Optional[int] = None
+    id_edificio: Optional[int] = None
+    capacidad_min: Optional[int] = None
+    capacidad_max: Optional[int] = None
+    piso: Optional[int] = None
+    estado: Optional[str] = None
+
+class AulaStatistics(BaseModel):
+    total_aulas: int
+    capacidad_promedio: float
+    capacidad_minima: int
+    capacidad_maxima: int
+    aulas_disponibles: int
+    aulas_mantenimiento: int
+    aulas_inhabilitadas: int
+    distribucion_por_tipo: List[Dict[str, Any]]
