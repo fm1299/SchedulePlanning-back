@@ -1,6 +1,6 @@
-# from fastapi import APIRouter, Depends, status, Query, Path
-# from sqlalchemy.orm import Session
-# from typing import List, Optional
+from fastapi import APIRouter, Depends, status, Query, Path
+from sqlalchemy.orm import Session
+from typing import List, Optional
 
 from core.database import get_db
 from services.aula_service import AulaService
@@ -12,7 +12,7 @@ from schemas.aula import (
     AulaStatistics
 )
 
-# router = APIRouter()
+router = APIRouter()
 
 
 def get_aula_service(db: Session = Depends(get_db)) -> AulaService:
