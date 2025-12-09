@@ -46,8 +46,9 @@ def create_aula(
 
 @router.put("/{aula_id}", response_model=AulaResponse)
 def update_aula(
+    *,
     aula_id: int = Path(..., gt=0),
-    aula_in: AulaUpdate = ...,
+    aula_in: AulaUpdate,
     service: AulaService = Depends(get_aula_service)
 ):
     return service.update_aula(aula_id, aula_in)

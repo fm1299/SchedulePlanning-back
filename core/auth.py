@@ -10,15 +10,6 @@ from sqlalchemy.orm import Session
 from core.config import settings
 from core.database import get_db
 
-
-"""
-Use Argon2 for password hashing to avoid bcrypt's 72-byte input truncation
-and to provide a stronger, modern KDF. This requires `argon2-cffi`.
-so arbitrary-length passwords are safe and won't be silently truncated.
-
-If you prefer raw bcrypt, you must manually truncate passwords to 72 bytes
-before hashing: `pw = pw.encode()[:72].decode(errors='ignore')`.
-"""
 pwd_context = CryptContext(schemes=["argon2"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl=f"{settings.API_V1_STR}/auth/token")
 

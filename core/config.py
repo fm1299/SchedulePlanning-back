@@ -12,7 +12,7 @@ class Settings(BaseSettings):
     API_V1_STR: str = "/api/v1"
 
     # Database - provide a local sqlite default for development/testing
-    DATABASE_URL: str = "postgresql+psycopg2://postgres:123456@localhost:5432/postgres"
+    DATABASE_URL: str = ""
 
     # Security - if not set in environment, a runtime secret will be generated
     SECRET_KEY: str = ""
@@ -21,9 +21,8 @@ class Settings(BaseSettings):
 
     # CORS
     BACKEND_CORS_ORIGINS: List[str] = ["http://localhost:3000"]
-
-    # Redis (optional for caching)
-    REDIS_URL: str = "redis://localhost:6379"
+    # Database Configuration
+    DB_ECHO: bool = False
 
     class Config:
         env_file = ".env"
