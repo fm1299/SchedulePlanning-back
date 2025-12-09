@@ -1,7 +1,10 @@
 from fastapi import APIRouter
-from endpoints import (
+from api.endpoints import (
     aulas,
-    # docentes,
+    docentes,
+    ranking_docentes,
+    tipos_docente,
+    asignaciones,
     # cursos,
     # horarios,
     # asignaciones,
@@ -18,6 +21,34 @@ api_router = APIRouter()
 
 api_router.include_router(
     aulas.router
+)
+
+# raking docentes
+api_router.include_router(
+    ranking_docentes.router,
+    prefix="/docentes",
+    tags=["Ranking Docentes"],
+)
+
+# Docentes
+api_router.include_router(
+    docentes.router,
+    prefix="/docentes",
+    tags=["Docentes"],
+)
+
+
+#Tipos Docentes
+api_router.include_router(
+    tipos_docente.router, 
+    prefix="/tipos-docente", 
+    tags=["Tipos de Docente"]
+)
+
+# Asignaciones
+api_router.include_router(asignaciones.router,
+    prefix="/asignaciones", 
+    tags=["Asignaciones"]
 )
 
 # api_router.include_router(
@@ -67,3 +98,6 @@ api_router.include_router(
 #     prefix="/optimization",
 #     tags=["Optimización"]
 # )
+
+
+

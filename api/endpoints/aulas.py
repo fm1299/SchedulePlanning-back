@@ -224,3 +224,4 @@ def get_statistics(
     - Distribución por tipo de aula
     """
     return service.get_statistics()
+    
