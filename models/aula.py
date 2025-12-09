@@ -1,18 +1,16 @@
-from sqlalchemy import Column, Integer, String, Enum
+from sqlalchemy import Column, Integer, String, ForeignKey
 from core.database import Base
-import enum
-
-class TipoAula(str, enum.Enum):
-    TEORIA = "TEORIA"
-    LABORATORIO = "LABORATORIO"
-    SEMINARIO = "SEMINARIO"
 
 class Aula(Base):
-    __tablename__ = "aulas"
-    
-    id = Column(Integer, primary_key=True, index=True)
-    codigo = Column(String, unique=True, index=True, nullable=False)
+    __tablename__ = "aula"
+
+    id_aula = Column(Integer, primary_key=True, index=True)
+    id_edificio = Column(Integer, nullable=False)
+    id_tipo = Column(Integer, nullable=False)
+
+    codigo = Column(String, nullable=False, unique=True)
     capacidad = Column(Integer, nullable=False)
-    tipo = Column(Enum(TipoAula), nullable=False)
-    ubicacion = Column(String, nullable=False)
-    equipamiento = Column(String, nullable=True)
+    piso = Column(Integer, nullable=False)
+
+    equipamiento = Column(String)
+    estado = Column(String)

@@ -27,49 +27,28 @@ api_router.include_router(aulas.router)
 api_router.include_router(tipos_aula.router)
 
 # api_router.include_router(
-#     auth.router,
-#     prefix="/auth",
-#     tags=["Autenticación"]
+#     aulas.router
 # )
 
+api_router.include_router(auth.router,
+    prefix="/auth",
+    tags=["Autenticación"])
+api_router.include_router(aulas.router)
+api_router.include_router(tipos_aula.router)
+
+=======
+# ❌ Desactivar módulo Aulas
+>>>>>>> origin/Yanira
 # api_router.include_router(
-#     docentes.router,
-#     prefix="/docentes",
-#     tags=["Docentes"]
+#     aulas.router,
+#     prefix="/aulas",
+#     tags=["Aulas"]
 # )
 
-# api_router.include_router(
-#     cursos.router,
-#     prefix="/cursos",
-#     tags=["Cursos"]
-# )
+# ✔ Activar SOLO tu módulo Bloques
 
-# api_router.include_router(
-#     horarios.router,
-#     prefix="/horarios",
-#     tags=["Horarios"]
-# )
 
-# api_router.include_router(
-#     asignaciones.router,
-#     prefix="/asignaciones",
-#     tags=["Asignaciones"]
-# )
 
-# api_router.include_router(
-#     restricciones.router,
-#     prefix="/restricciones",
-#     tags=["Restricciones"]
-# )
+api_router.include_router(reservas.router)
 
-# api_router.include_router(
-#     conflictos.router,
-#     prefix="/conflictos",
-#     tags=["Conflictos"]
-# )
 
-# api_router.include_router(
-#     optimization.router,
-#     prefix="/optimization",
-#     tags=["Optimización"]
-# )
