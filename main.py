@@ -1,7 +1,12 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from core.config import settings
+<<<<<<< HEAD
 from core.database import engine, Base
+=======
+from core.database import Base, engine
+#from models import Base
+>>>>>>> origin/edson
 from api.router import api_router
 
 # Importar modelos para registrar las tablas en SQLAlchemy

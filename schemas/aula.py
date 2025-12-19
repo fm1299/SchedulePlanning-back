@@ -1,8 +1,14 @@
 from pydantic import BaseModel, ConfigDict, Field, validator
 from typing import Optional, List, Dict, Any
 
-# Elimina esta línea si existe:
-# from repositories.aula_repository import aula_repository
+from enum import Enum
+
+
+
+class TipoAulaEnum(str, Enum):
+    TEORIA = "TEORIA"
+    LABORATORIO = "LABORATORIO"
+    SEMINARIO = "SEMINARIO"
 
 class AulaBase(BaseModel):
     id_edificio: int
@@ -32,41 +38,21 @@ class AulaUpdate(BaseModel):
     equipamiento: Optional[str] = None
     estado: Optional[str] = None
     
-    @validator('estado')
-    def validate_estado(cls, v):
-        if v is not None:
-            allowed = ['disponible', 'mantenimiento', 'inhabilitada']
-            if v not in allowed:
-                raise ValueError(f'Estado debe ser uno de: {allowed}')
-        return v
+    class Config:
+        from_attributes = True
 
-class AulaInDB(AulaBase):
-    id_aula: int
-    
-    # Información relacionada
-    edificio_nombre: Optional[str] = None
-    tipo_aula_nombre: Optional[str] = None
-    
-    model_config = ConfigDict(from_attributes=True)
-
-class AulaResponse(AulaInDB):
-    pass
 
 class AulaSearch(BaseModel):
-    codigo: Optional[str] = None
-    id_tipo: Optional[int] = None
-    id_edificio: Optional[int] = None
-    capacidad_min: Optional[int] = None
-    capacidad_max: Optional[int] = None
-    piso: Optional[int] = None
-    estado: Optional[str] = None
+    codigo: Optional[str] = Field(None, description="Buscar por código (coincidencia parcial)")
+    tipo: Optional[TipoAulaEnum] = Field(None, description="Filtrar por tipo de aula")
+    capacidad_min: Optional[int] = Field(None, ge=0, description="Capacidad mínima requerida")
+    capacidad_max: Optional[int] = Field(None, ge=0, description="Capacidad máxima permitida")
+    ubicacion: Optional[str] = Field(None, description="Filtrar por ubicación (coincidencia parcial)")
+    equipamiento: Optional[str] = Field(None, description="Filtrar por equipamiento (coincidencia parcial)")
 
 class AulaStatistics(BaseModel):
     total_aulas: int
     capacidad_promedio: float
     capacidad_minima: int
     capacidad_maxima: int
-    aulas_disponibles: int
-    aulas_mantenimiento: int
-    aulas_inhabilitadas: int
-    distribucion_por_tipo: List[Dict[str, Any]]
+    distribucion_por_tipo: Dict[TipoAulaEnum, int]

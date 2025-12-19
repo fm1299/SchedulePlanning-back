@@ -93,12 +93,4 @@ def get_statistics(
     service: AulaService = Depends(get_aula_service)
 ):
     return service.get_statistics()
-
-
-@router.get("/disponibles", response_model=List[AulaResponse])
-def get_aulas_disponibles(
-    skip: int = Query(0, ge=0),
-    limit: int = Query(100, ge=1, le=100),
-    service: AulaService = Depends(get_aula_service)
-):
-    return service.get_aulas_disponibles(skip, limit)
+    

@@ -1,9 +1,20 @@
-from pydantic_settings import BaseSettings
+
+'''
+En Pydantic v2 esa clase interna Config (comentada actualmente) ya no tiene efecto; 
+la configuración debe ir en model_config. Cambiar el archivo a pydantic
+'''
+
+
+
+
+from pydantic_settings import BaseSettings, SettingsConfigDict
 from typing import List
 import secrets
 import logging
 
 logger = logging.getLogger("schedule_planning.config")
+
+
 
 
 class Settings(BaseSettings):
