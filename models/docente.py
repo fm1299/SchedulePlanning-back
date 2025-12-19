@@ -42,20 +42,6 @@ class Docente(Base):
     #departamento = relationship("Departamento", back_populates="docentes")
     usuario_docente = relationship("UsuarioDocente", back_populates="docente", uselist=False)
 
-class Usuario(Base):
-    __tablename__ = "usuario"
-    
-    id_usuario = Column(Integer, primary_key=True, index=True)
-    username = Column(String(100), unique=True, nullable=False)
-    password_hash = Column(String(255), nullable=False)
-    email = Column(String(255), unique=True, nullable=True)
-    activo = Column(Boolean, default=True)
-    rol = Column(String(50), default="docente")
-    fecha_creacion = Column(TIMESTAMP, server_default=func.now())
-    password_updated_at = Column(TIMESTAMP)
-    last_login = Column(TIMESTAMP)
-    failed_attempts = Column(Integer, default=0)
-
 class UsuarioDocente(Base):
     __tablename__ = "usuariodocente"
     
@@ -66,15 +52,6 @@ class UsuarioDocente(Base):
     usuario = relationship("Usuario")
     docente = relationship("Docente", back_populates="usuario_docente")
 
-# Modelos adicionales para completar las relaciones
-class Dias(Base):
-    __tablename__ = "dias"
-    
-    id_dia = Column(Integer, primary_key=True, index=True)
-    nombre_dia = Column(String(50), nullable=False)
-    abreviatura = Column(String(10), nullable=False)
-    orden = Column(Integer, nullable=False)
-
 class Semestre(Base):
     __tablename__ = "semestre"
     
@@ -84,22 +61,6 @@ class Semestre(Base):
     fecha_inicio = Column(Date, nullable=False)
     fecha_fin = Column(Date, nullable=False)
     activo = Column(Boolean, default=False)
-
-class DisponibilidadDocente(Base):
-    __tablename__ = "disponibilidaddocente"
-    
-    id_disponibilidad = Column(Integer, primary_key=True, index=True)
-    id_docente = Column(Integer, ForeignKey("docente.id_docente"), nullable=False)
-    id_semestre = Column(Integer, ForeignKey("semestre.id_semestre"), nullable=False)
-    id_dia = Column(Integer, ForeignKey("dias.id_dia"), nullable=False)
-    hora_inicio = Column(Time, nullable=False)
-    hora_fin = Column(Time, nullable=False)
-    disponible = Column(Boolean, default=True)
-    
-    # Relaciones
-    docente = relationship("Docente")
-    
-    
 
 class AsignacionDocente(Base):
     __tablename__ = "asignaciondocente"

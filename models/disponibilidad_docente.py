@@ -1,5 +1,6 @@
 from sqlalchemy import Column, Integer, Boolean, ForeignKey, Time
 from core.database import Base
+from sqlalchemy.orm import relationship
 
 class DisponibilidadDocente(Base):
     __tablename__ = "disponibilidaddocente"
@@ -13,3 +14,5 @@ class DisponibilidadDocente(Base):
     hora_fin = Column(Time, nullable=False)
 
     disponible = Column(Boolean, default=True)
+
+    docente = relationship("Docente")

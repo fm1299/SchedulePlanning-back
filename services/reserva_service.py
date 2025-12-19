@@ -5,7 +5,7 @@ from models.aula import Aula
 from schemas.reserva import ReservaCreate
 from schemas.reserva import ReservaUpdate
 from repositories.reserva_repository import ReservaRepository
-from models.historial_cambios import HistorialCambios
+from models.historial import HistorialCambios
 import json
 
 
