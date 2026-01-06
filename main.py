@@ -5,13 +5,15 @@ from core.database import Base, engine
 #from models import Base
 from api.router import api_router
 
-# Importar modelos para registrar las tablas en SQLAlchemy
+from models.usuario import Usuario
 from models.aula import Aula
 from models.reserva import Reserva
 from models.bloque_model import BloqueHorario
 from models.horario_asignado import HorarioAsignado
 from models.mantenimiento_aula import MantenimientoAula
-from models.usuario import Usuario
+from models.historial_cambios import HistorialCambios
+from models.administrador import Administrador
+
 
 
 app = FastAPI(
