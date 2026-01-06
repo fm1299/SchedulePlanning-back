@@ -45,7 +45,22 @@ class ReservaRepository:
 
 
     # ---------------- VALIDACIONES ---------------- #
-
+    # Reemplaza tu función 'conflicto_reserva' actual por esta:
+    def conflicto_reserva_confirmada(self, r: Reserva):
+        """
+        Verifica si hay conflicto SOLO con reservas que ya están CONFIRMADAS.
+        """
+        stmt = (
+            select(Reserva)
+            .where(Reserva.id_aula == r.id_aula)
+            .where(Reserva.fecha == r.fecha)
+            .where(Reserva.estado == 'confirmada')  # <--- EL FILTRO CLAVE
+            .where(Reserva.id_reserva != r.id_reserva) # Ignorar la misma reserva (al editar)
+            .where(r.hora_inicio < Reserva.hora_fin)
+            .where(r.hora_fin > Reserva.hora_inicio)
+        )
+        return self.db.execute(stmt).scalar_one_or_none()
+    '''
     # 1) Conflicto con otras reservas (AULA)
     def conflicto_reserva(self, r: Reserva):
         stmt = (
@@ -56,7 +71,7 @@ class ReservaRepository:
             .where(r.hora_fin > Reserva.hora_inicio)
         )
         return self.db.execute(stmt).scalar_one_or_none()
-
+    '''
     # 2) Conflicto con horario oficial del AULA (incluye día)
     def conflicto_horario_oficial(self, r: Reserva):
         dia_semana = dias_map[r.fecha.weekday()]  # convertir fecha → id_dia
@@ -160,4 +175,8 @@ class ReservaRepository:
             .where(r.hora_fin > Reserva.hora_inicio)
         )
         return self.db.execute(stmt).scalar_one_or_none()
+    
+    def get_by_docente(self, id_docente: int):
+        stmt = select(Reserva).where(Reserva.id_docente == id_docente)
+        return self.db.execute(stmt).scalars().all()
 
