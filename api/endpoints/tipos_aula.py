@@ -10,7 +10,7 @@ from schemas.aula import (
     AulaStatistics, AulaFrontend
 )
 
-router = APIRouter(prefix="/api/aulas", tags=["aulas"])
+router = APIRouter(prefix="/aulas", tags=["Aulas"])
 
 def get_aula_service(db: Session = Depends(get_db)) -> AulaService:
     return AulaService(db)

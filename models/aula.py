@@ -19,5 +19,9 @@ class Aula(Base):
     
     tipo_aula = relationship("TipoAula", back_populates="aulas")
     
+    reservas = relationship("Reserva", back_populates="aula")
+    horarios = relationship("HorarioAsignado", back_populates="aula")
+    mantenimientos = relationship("MantenimientoAula", back_populates="aula")
+
     def __repr__(self):
         return f"<Aula(id={self.id_aula}, codigo={self.codigo}, nombre={self.nombre})>"

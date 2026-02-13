@@ -17,10 +17,14 @@ class AulaService:
     
     def get_all_aulas(self, skip: int = 0, limit: int = 100) -> List[Aula]:
 
-        return self.db.query(Aula)\
-            .options(Session.load(Aula).load_only('*'))\
-            .join(TipoAula)\
-            .offset(skip).limit(limit).all()
+        return (
+        self.db.query(Aula)
+        .join(TipoAula)
+        .options(joinedload(Aula.tipo_aula))
+        .offset(skip)
+        .limit(limit)
+        .all()
+        )
     
     def get_aula(self, aula_id: int) -> Aula:
 
